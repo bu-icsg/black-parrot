@@ -126,13 +126,14 @@ module bp_axi_top
 
   `declare_bp_bedrock_mem_if(paddr_width_p, did_width_p, lce_id_width_p, lce_assoc_p);
 
+  // DMA interface from BP to cache2axi
   `declare_bsg_cache_dma_pkt_s(daddr_width_p);
-  bsg_cache_dma_pkt_s [num_cce_p-1:0][l2_banks_p-1:0] dma_pkt_o;
-  logic [num_cce_p-1:0][l2_banks_p-1:0] dma_pkt_v_o, dma_pkt_ready_and_i;
-  logic [num_cce_p-1:0][l2_banks_p-1:0][l2_fill_width_p-1:0] dma_data_o;
-  logic [num_cce_p-1:0][l2_banks_p-1:0] dma_data_v_o, dma_data_ready_and_i;
-  logic [num_cce_p-1:0][l2_banks_p-1:0][l2_fill_width_p-1:0] dma_data_i;
-  logic [num_cce_p-1:0][l2_banks_p-1:0] dma_data_v_i, dma_data_ready_and_o;
+  bsg_cache_dma_pkt_s [num_cce_p-1:0][l2_banks_p-1:0] axi_dma_pkt_lo;
+  logic [num_cce_p-1:0][l2_banks_p-1:0] axi_dma_pkt_v_lo, axi_dma_pkt_ready_and_li;
+  logic [num_cce_p-1:0][l2_banks_p-1:0][l2_fill_width_p-1:0] axi_dma_data_lo;
+  logic [num_cce_p-1:0][l2_banks_p-1:0] axi_dma_data_v_lo, axi_dma_data_ready_and_li;
+  logic [num_cce_p-1:0][l2_banks_p-1:0][l2_fill_width_p-1:0] axi_dma_data_li;
+  logic [num_cce_p-1:0][l2_banks_p-1:0] axi_dma_data_v_li, axi_dma_data_ready_and_lo;
 
   if (cce_type_p == e_cce_uce)
     begin : u
@@ -185,17 +186,18 @@ module bp_axi_top
         ,.io_resp_ready_and_i(io_resp_yumi_li)
         ,.io_resp_last_o(io_resp_last_lo)
 
-        ,.dma_pkt_o(dma_pkt_o)
-        ,.dma_pkt_v_o(dma_pkt_v_o)
-        ,.dma_pkt_ready_and_i(dma_pkt_ready_and_i)
+        // DMA (memory) to cache2axi
+        ,.dma_pkt_o(axi_dma_pkt_lo)
+        ,.dma_pkt_v_o(axi_dma_pkt_v_lo)
+        ,.dma_pkt_ready_and_i(axi_dma_pkt_ready_and_li)
 
-        ,.dma_data_i(dma_data_i)
-        ,.dma_data_v_i(dma_data_v_i)
-        ,.dma_data_ready_and_o(dma_data_ready_and_o)
+        ,.dma_data_i(axi_dma_data_li)
+        ,.dma_data_v_i(axi_dma_data_v_li)
+        ,.dma_data_ready_and_o(axi_dma_data_ready_and_lo)
 
-        ,.dma_data_o(dma_data_o)
-        ,.dma_data_v_o(dma_data_v_o)
-        ,.dma_data_ready_and_i(dma_data_ready_and_i)
+        ,.dma_data_o(axi_dma_data_lo)
+        ,.dma_data_v_o(axi_dma_data_v_lo)
+        ,.dma_data_ready_and_i(axi_dma_data_ready_and_li)
         );
 
       bp_me_axil_client
@@ -247,7 +249,7 @@ module bp_axi_top
 
          ,.*
          );
-    end
+    end // unicore
   else
     begin : m
       `declare_bsg_ready_and_link_sif_s(io_noc_flit_width_p, bp_io_noc_ral_link_s);
@@ -528,23 +530,23 @@ module bp_axi_top
               localparam col_lp     = i%mc_x_dim_p;
               localparam col_pos_lp = (i/mc_x_dim_p)*l2_banks_p+j;
 
-              assign dma_pkt_o[i][j] = dma_pkt_lo[col_lp][col_pos_lp];
-              assign dma_pkt_v_o[i][j] = dma_pkt_v_lo[col_lp][col_pos_lp];
-              assign dma_pkt_yumi_li[col_lp][col_pos_lp] = dma_pkt_ready_and_i[i][j] & dma_pkt_v_o[i][j];
+              assign axi_dma_pkt_lo[i][j] = dma_pkt_lo[col_lp][col_pos_lp];
+              assign axi_dma_pkt_v_lo[i][j] = dma_pkt_v_lo[col_lp][col_pos_lp];
+              assign dma_pkt_yumi_li[col_lp][col_pos_lp] = axi_dma_pkt_ready_and_li[i][j] & axi_dma_pkt_v_lo[i][j];
 
-              assign dma_data_o[i][j] = dma_data_lo[col_lp][col_pos_lp];
-              assign dma_data_v_o[i][j] = dma_data_v_lo[col_lp][col_pos_lp];
-              assign dma_data_yumi_li[col_lp][col_pos_lp] = dma_data_ready_and_i[i][j] & dma_data_v_o[i][j];
+              assign axi_dma_data_lo[i][j] = dma_data_lo[col_lp][col_pos_lp];
+              assign axi_dma_data_v_lo[i][j] = dma_data_v_lo[col_lp][col_pos_lp];
+              assign dma_data_yumi_li[col_lp][col_pos_lp] = axi_dma_data_ready_and_li[i][j] & axi_dma_data_v_lo[i][j];
 
-              assign dma_data_li[col_lp][col_pos_lp] = dma_data_i[i][j];
-              assign dma_data_v_li[col_lp][col_pos_lp] = dma_data_v_i[i][j];
-              assign dma_data_ready_and_o[i][j] = dma_data_ready_and_lo[col_lp][col_pos_lp];
+              assign dma_data_li[col_lp][col_pos_lp] = axi_dma_data_li[i][j];
+              assign dma_data_v_li[col_lp][col_pos_lp] = axi_dma_data_v_li[i][j];
+              assign axi_dma_data_ready_and_lo[i][j] = dma_data_ready_and_lo[col_lp][col_pos_lp];
             end
         end
     end // multicore
 
   // Unswizzle the dram
-  bsg_cache_dma_pkt_s [num_cce_p-1:0][l2_banks_p-1:0] dma_pkt;
+  bsg_cache_dma_pkt_s [num_cce_p-1:0][l2_banks_p-1:0] axi_dma_pkt;
   for (genvar i = 0; i < num_cce_p; i++)
     begin : rof3
       for (genvar j = 0; j < l2_banks_p; j++)
@@ -553,10 +555,10 @@ module bp_axi_top
           bp_me_dram_hash_decode
            #(.bp_params_p(bp_params_p))
             dma_addr_hash
-            (.daddr_i(dma_pkt_o[i][j].addr)
-             ,.daddr_o(dma_pkt[i][j].addr)
+            (.daddr_i(axi_dma_pkt_lo[i][j].addr)
+             ,.daddr_o(axi_dma_pkt[i][j].addr)
              );
-          assign dma_pkt[i][j].write_not_read = dma_pkt_o[i][j].write_not_read;
+          assign axi_dma_pkt[i][j].write_not_read = axi_dma_pkt_lo[i][j].write_not_read;
         end
     end
 
@@ -573,17 +575,17 @@ module bp_axi_top
      (.clk_i(clk_i)
       ,.reset_i(reset_i)
 
-      ,.dma_pkt_i(dma_pkt)
-      ,.dma_pkt_v_i(dma_pkt_v_o)
-      ,.dma_pkt_yumi_o(dma_pkt_ready_and_i)
+      ,.dma_pkt_i(axi_dma_pkt)
+      ,.dma_pkt_v_i(axi_dma_pkt_v_lo)
+      ,.dma_pkt_yumi_o(axi_dma_pkt_ready_and_li)
 
-      ,.dma_data_o(dma_data_i)
-      ,.dma_data_v_o(dma_data_v_i)
-      ,.dma_data_ready_i(dma_data_ready_and_o)
+      ,.dma_data_o(axi_dma_data_li)
+      ,.dma_data_v_o(axi_dma_data_v_li)
+      ,.dma_data_ready_i(axi_dma_data_ready_and_lo)
 
-      ,.dma_data_i(dma_data_o)
-      ,.dma_data_v_i(dma_data_v_o)
-      ,.dma_data_yumi_o(dma_data_ready_and_i)
+      ,.dma_data_i(axi_dma_data_lo)
+      ,.dma_data_v_i(axi_dma_data_v_lo)
+      ,.dma_data_yumi_o(axi_dma_data_ready_and_li)
 
       ,.axi_awid_o(m_axi_awid_o)
       ,.axi_awaddr_addr_o(m_axi_awaddr_o)
