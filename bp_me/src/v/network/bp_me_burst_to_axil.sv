@@ -270,7 +270,7 @@ module bp_me_burst_to_axil
     assert (reset_i !== '0 || ~m_axil_bvalid_i || m_axil_bresp_i == '0)
       else $error("Client device has an error response to writes");
     assert (reset_i !== '0 || ~io_cmd_header_v_i
-            || io_cmd_header_cast_i.size < e_bedrock_msg_size_64
+            || io_cmd_header_cast_i.size <= e_bedrock_msg_size_8
             || axil_data_width_p == 64)
       else $error("64-bit BedRock command not supported with 32-bit AXIL data width");
     assert (reset_i !== '0 || ~io_cmd_header_v_i
@@ -278,6 +278,8 @@ module bp_me_burst_to_axil
             || (io_cmd_header_cast_i.msg_type inside {e_bedrock_mem_uc_wr, e_bedrock_mem_wr} && io_cmd_has_data_i)
            )
       else $error("BedRock command type and has data signal inconsistent");
+    assert (reset_i !== '0 || ~io_cmd_data_v_i || io_cmd_last_i)
+      else $error("BedRock command data must be single beat");
   end
   //synopsys translate_on
 

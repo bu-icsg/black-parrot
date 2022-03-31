@@ -241,7 +241,7 @@ module bp_me_axil_to_burst
     assert (reset_i !== '0 || ~s_axil_wvalid_i || (s_axil_wstrb_i inside {'h1, 'h3, 'hf, 'hff}))
       else $error("Invalid write strobe encountered");
     assert (reset_i !== '0 || ~io_resp_header_v_i
-            || io_resp_header_cast_i.size < e_bedrock_msg_size_64
+            || io_resp_header_cast_i.size <= e_bedrock_msg_size_8
             || axil_data_width_p == 64)
       else $error("64-bit BedRock response not supported with 32-bit AXIL data width");
     assert (reset_i !== '0 || ~io_resp_header_v_i
@@ -249,7 +249,8 @@ module bp_me_axil_to_burst
             || (io_resp_header_cast_i.msg_type inside {e_bedrock_mem_uc_wr, e_bedrock_mem_wr} && ~io_resp_has_data_i)
            )
       else $error("BedRock response type and has data signal inconsistent");
-
+    assert (reset_i !== '0 || ~io_resp_data_v_i || io_resp_last_i)
+      else $error("BedRock response data must be single beat");
   end
   // synopsys translate_on
 
