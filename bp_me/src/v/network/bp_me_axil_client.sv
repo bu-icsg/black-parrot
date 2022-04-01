@@ -86,7 +86,7 @@ module bp_me_axil_client
    #(.width_p(axil_addr_width_p))
    awaddr_reg
     (.clk_i(clk_i)
-     ,.en_i(s_axil_awready_o & s_axil_awvalid_i)
+     ,.en_i(is_ready & s_axil_awvalid_i)
      ,.data_i(s_axil_awaddr_i)
      ,.data_o(s_axil_awaddr_r)
      );
@@ -98,7 +98,7 @@ module bp_me_axil_client
    #(.width_p(axil_data_width_p+(axil_data_width_p>>3)))
    wdata_reg
     (.clk_i(clk_i)
-     ,.en_i(s_axil_wready_o & s_axil_wvalid_i)
+     ,.en_i(is_ready & s_axil_wvalid_i)
      ,.data_i({s_axil_wstrb_i, s_axil_wdata_i})
      ,.data_o({s_axil_wstrb_r, s_axil_wdata_r})
      );
@@ -138,10 +138,6 @@ module bp_me_axil_client
 
       unique casez (state_r)
         // Can send writes immediately if both aw/w are available, else read/write with 1 cycle delay
-        // NOTE: wsize and s_axil_awaddr_r only become valid when r&v axi signals high
-        // on address and data, respectively. This means that io_cmd_o isn't actually valid
-        // until cycle when ready goes high. This will cause problems if io_cmd_o connects
-        // to a stream2burst converter.
         e_ready:
           begin
             s_axil_awready_o = io_cmd_ready_and_i;
