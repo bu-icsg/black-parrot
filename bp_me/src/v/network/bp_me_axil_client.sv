@@ -86,7 +86,7 @@ module bp_me_axil_client
    #(.width_p(axil_addr_width_p))
    awaddr_reg
     (.clk_i(clk_i)
-     ,.en_i(is_ready & s_axil_awvalid_i)
+     ,.en_i(s_axil_awready_o & s_axil_awvalid_i)
      ,.data_i(s_axil_awaddr_i)
      ,.data_o(s_axil_awaddr_r)
      );
@@ -98,7 +98,7 @@ module bp_me_axil_client
    #(.width_p(axil_data_width_p+(axil_data_width_p>>3)))
    wdata_reg
     (.clk_i(clk_i)
-     ,.en_i(is_ready & s_axil_wvalid_i)
+     ,.en_i(s_axil_wready_o & s_axil_wvalid_i)
      ,.data_i({s_axil_wstrb_i, s_axil_wdata_i})
      ,.data_o({s_axil_wstrb_r, s_axil_wdata_r})
      );
